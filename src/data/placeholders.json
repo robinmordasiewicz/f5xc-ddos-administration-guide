@@ -1,0 +1,212 @@
+{
+  "DC_NAME": {
+    "type": "text",
+    "default": "DC1",
+    "description": "Customer data center name"
+  },
+  "CENTER_1": {
+    "type": "dropdown",
+    "default": "US West (SJC)",
+    "description": "Primary F5 XC DDoS scrubbing center",
+    "options": [
+      "US West (SJC)",
+      "US East (DCA)",
+      "Toronto (YYZ)",
+      "UK (LON)",
+      "Germany (FRA)",
+      "Paris (CDG)",
+      "Asia (SIN)",
+      "Bahrain (BAH)",
+      "Hong Kong (HKG)",
+      "Montreal (YUL)",
+      "Mumbai (BOM)",
+      "Ohio (CMH)",
+      "Sao Paulo (GRU)",
+      "Sydney (SYD)",
+      "Tokyo (TYO)"
+    ]
+  },
+  "CENTER_2": {
+    "type": "dropdown",
+    "default": "US East (DCA)",
+    "description": "Secondary F5 XC DDoS scrubbing center",
+    "options": [
+      "US West (SJC)",
+      "US East (DCA)",
+      "Toronto (YYZ)",
+      "UK (LON)",
+      "Germany (FRA)",
+      "Paris (CDG)",
+      "Asia (SIN)",
+      "Bahrain (BAH)",
+      "Hong Kong (HKG)",
+      "Montreal (YUL)",
+      "Mumbai (BOM)",
+      "Ohio (CMH)",
+      "Sao Paulo (GRU)",
+      "Sydney (SYD)",
+      "Tokyo (TYO)"
+    ]
+  },
+  "XC_C1_OUTER_V4": {
+    "type": "text",
+    "default": "198.51.100.10",
+    "description": "F5 XC Center 1 outer IPv4"
+  },
+  "XC_C2_OUTER_V4": {
+    "type": "text",
+    "default": "198.51.100.20",
+    "description": "F5 XC Center 2 outer IPv4"
+  },
+  "XC_C1_OUTER_V6": {
+    "type": "text",
+    "default": "2001:db8:100::1",
+    "description": "F5 XC Center 1 outer IPv6"
+  },
+  "XC_C2_OUTER_V6": {
+    "type": "text",
+    "default": "2001:db8:100::2",
+    "description": "F5 XC Center 2 outer IPv6"
+  },
+  "BIGIP_A_OUTER_V4": {
+    "type": "text",
+    "default": "203.0.113.10",
+    "description": "BIG-IP-A outer self IPv4 (GRE endpoint)"
+  },
+  "BIGIP_B_OUTER_V4": {
+    "type": "text",
+    "default": "203.0.113.11",
+    "description": "BIG-IP-B outer self IPv4 (GRE endpoint)"
+  },
+  "BIGIP_A_OUTER_V6": {
+    "type": "text",
+    "default": "2001:db8:200::1",
+    "description": "BIG-IP-A outer self IPv6 (GRE endpoint)"
+  },
+  "BIGIP_B_OUTER_V6": {
+    "type": "text",
+    "default": "2001:db8:200::2",
+    "description": "BIG-IP-B outer self IPv6 (GRE endpoint)"
+  },
+  "XC_C1_T1_INNER_V4": {
+    "type": "text",
+    "default": "10.10.10.1",
+    "description": "XC Center 1 tunnel 1 inner IPv4"
+  },
+  "XC_C2_T1_INNER_V4": {
+    "type": "text",
+    "default": "10.10.10.5",
+    "description": "XC Center 2 tunnel 1 inner IPv4"
+  },
+  "XC_C1_T2_INNER_V4": {
+    "type": "text",
+    "default": "10.10.10.9",
+    "description": "XC Center 1 tunnel 2 inner IPv4"
+  },
+  "XC_C2_T2_INNER_V4": {
+    "type": "text",
+    "default": "10.10.10.13",
+    "description": "XC Center 2 tunnel 2 inner IPv4"
+  },
+  "XC_C1_T1_INNER_V6": {
+    "type": "text",
+    "default": "fd70:b364:3528:2b51::1",
+    "description": "XC Center 1 tunnel 1 inner IPv6"
+  },
+  "XC_C2_T1_INNER_V6": {
+    "type": "text",
+    "default": "fd70:b364:3528:2b52::1",
+    "description": "XC Center 2 tunnel 1 inner IPv6"
+  },
+  "XC_C1_T2_INNER_V6": {
+    "type": "text",
+    "default": "fd70:b364:3528:2b53::1",
+    "description": "XC Center 1 tunnel 2 inner IPv6"
+  },
+  "XC_C2_T2_INNER_V6": {
+    "type": "text",
+    "default": "fd70:b364:3528:2b54::1",
+    "description": "XC Center 2 tunnel 2 inner IPv6"
+  },
+  "BIGIP_C1_T1_INNER_V4": {
+    "type": "text",
+    "default": "10.10.10.2",
+    "description": "BIG-IP-A Center 1 tunnel 1 inner IPv4"
+  },
+  "BIGIP_C2_T1_INNER_V4": {
+    "type": "text",
+    "default": "10.10.10.6",
+    "description": "BIG-IP-A Center 2 tunnel 1 inner IPv4"
+  },
+  "BIGIP_C1_T2_INNER_V4": {
+    "type": "text",
+    "default": "10.10.10.10",
+    "description": "BIG-IP-B Center 1 tunnel 2 inner IPv4"
+  },
+  "BIGIP_C2_T2_INNER_V4": {
+    "type": "text",
+    "default": "10.10.10.14",
+    "description": "BIG-IP-B Center 2 tunnel 2 inner IPv4"
+  },
+  "BIGIP_C1_T1_INNER_V6": {
+    "type": "text",
+    "default": "fd70:b364:3528:2b51::2",
+    "description": "BIG-IP-A Center 1 tunnel 1 inner IPv6"
+  },
+  "BIGIP_C2_T1_INNER_V6": {
+    "type": "text",
+    "default": "fd70:b364:3528:2b52::2",
+    "description": "BIG-IP-A Center 2 tunnel 1 inner IPv6"
+  },
+  "BIGIP_C1_T2_INNER_V6": {
+    "type": "text",
+    "default": "fd70:b364:3528:2b53::2",
+    "description": "BIG-IP-B Center 1 tunnel 2 inner IPv6"
+  },
+  "BIGIP_C2_T2_INNER_V6": {
+    "type": "text",
+    "default": "fd70:b364:3528:2b54::2",
+    "description": "BIG-IP-B Center 2 tunnel 2 inner IPv6"
+  },
+  "PROTECTED_CIDR_V4": {
+    "type": "dropdown",
+    "default": "/24 (256 IPs)",
+    "description": "DDoS-protected IPv4 prefix length",
+    "options": [
+      "/24 (256 IPs)",
+      "/23 (512 IPs)",
+      "/22 (1024 IPs)",
+      "/21 (2048 IPs)"
+    ]
+  },
+  "PROTECTED_NET_V4": {
+    "type": "text",
+    "default": "192.0.2.0",
+    "description": "DDoS-protected public IPv4 network"
+  },
+  "PROTECTED_PREFIX_V6": {
+    "type": "text",
+    "default": "2001:db8:abcd::/48",
+    "description": "DDoS-protected public IPv6 prefix"
+  },
+  "PROTECTED_NET_V6": {
+    "type": "text",
+    "default": "2001:db8:abcd::",
+    "description": "DDoS-protected public IPv6 network"
+  },
+  "CUSTOMER_ASN": {
+    "type": "text",
+    "default": "64496",
+    "description": "Your public ASN (registered with ARIN/RIR)"
+  },
+  "F5_XC_ASN": {
+    "type": "text",
+    "default": "35280",
+    "description": "F5 Distributed Cloud ASN (provided by SOC)"
+  },
+  "BGP_PASSWORD": {
+    "type": "text",
+    "default": "s3cr3t",
+    "description": "BGP MD5 authentication password"
+  }
+}

@@ -1,0 +1,464 @@
+---
+title: BIG-IP Configuration
+description: tmsh and imish commands for configuring GRE tunnels, self IPs, and BGP on BIG-IP HA pairs.
+sidebar:
+  order: 5
+---
+
+import PlaceholderForm from '../../../components/PlaceholderForm.astro';
+
+<PlaceholderForm />
+
+## BIG-IP
+
+- (Route Domain 0 example)
+
+All commands below are run in **tmsh** on BIG-IP. Adjust object names
+and IPs as needed.
+
+For general GRE tunnel configuration on BIG-IP, see
+[Configuring a GRE Tunnel Using BIG-IP](https://community.f5.com/kb/technicalarticles/configuring-a-generic-routing-encapsulation-gre-tunnel-using-big-ip/289030). For initial
+routed configuration setup with F5 XC, see [K000147949](https://my.f5.com/manage/s/article/K000147949).
+
+### tmsh
+
+```bash title="tmsh"
+[root@bigip:Active]# tmsh
+root@(bigip)(cfg-sync Standalone)(Active)(/Common)(tmos)#
+```
+
+### Outer Self IPs
+
+GRE endpoints
+
+These are the IPs on each BIG-IP unit used as **GRE tunnel
+endpoints**, typically on the external VLAN. Each unit has its own
+non-floating outer self IP (`traffic-group-local-only`):
+
+**BIG-IP-A:**
+
+```shell title="tmsh"
+create net self xc-ddos-v4-self-a \
+  vlan external \
+  traffic-group traffic-group-local-only \
+  allow-service add { icmp:any gre:any } \
+  address xBIGIP_A_OUTER_V4x/24
+
+create net self xc-ddos-v6-self-a \
+  vlan external \
+  traffic-group traffic-group-local-only \
+  allow-service add { icmp:any gre:any } \
+  address xBIGIP_A_OUTER_V6x/64
+```
+
+**BIG-IP-B:**
+
+```shell title="tmsh"
+create net self xc-ddos-v4-self-b \
+  vlan external \
+  traffic-group traffic-group-local-only \
+  allow-service add { icmp:any gre:any } \
+  address xBIGIP_B_OUTER_V4x/24
+
+create net self xc-ddos-v6-self-b \
+  vlan external \
+  traffic-group traffic-group-local-only \
+  allow-service add { icmp:any gre:any } \
+  address xBIGIP_B_OUTER_V6x/64
+```
+
+### GRE tunnels
+
+Each tunnel points from a BIG-IP unit to an F5 Distributed Cloud
+scrubbing center endpoint. Create **two tunnels per unit** (one to
+each geo-located scrubbing center) for a total of **four logical
+tunnels** across the HA pair:
+
+**Tunnel C1-T1 — BIG-IP-A to xCENTER_1x:**
+
+```shell title="tmsh"
+create net tunnels tunnel xc-ddos-c1t1-v4 \
+  local-address xBIGIP_A_OUTER_V4x \
+  profile gre \
+  remote-address xXC_C1_OUTER_V4x
+
+create net tunnels tunnel xc-ddos-c1t1-v6 \
+  local-address xBIGIP_A_OUTER_V6x \
+  profile gre \
+  remote-address xXC_C1_OUTER_V6x
+```
+
+**Tunnel C2-T1 — BIG-IP-A to xCENTER_2x:**
+
+```shell title="tmsh"
+create net tunnels tunnel xc-ddos-c2t1-v4 \
+  local-address xBIGIP_A_OUTER_V4x \
+  profile gre \
+  remote-address xXC_C2_OUTER_V4x
+
+create net tunnels tunnel xc-ddos-c2t1-v6 \
+  local-address xBIGIP_A_OUTER_V6x \
+  profile gre \
+  remote-address xXC_C2_OUTER_V6x
+```
+
+**Tunnel C1-T2 — BIG-IP-B to xCENTER_1x:**
+
+```shell title="tmsh"
+create net tunnels tunnel xc-ddos-c1t2-v4 \
+  local-address xBIGIP_B_OUTER_V4x \
+  profile gre \
+  remote-address xXC_C1_OUTER_V4x
+
+create net tunnels tunnel xc-ddos-c1t2-v6 \
+  local-address xBIGIP_B_OUTER_V6x \
+  profile gre \
+  remote-address xXC_C1_OUTER_V6x
+```
+
+**Tunnel C2-T2 — BIG-IP-B to xCENTER_2x:**
+
+```shell title="tmsh"
+create net tunnels tunnel xc-ddos-c2t2-v4 \
+  local-address xBIGIP_B_OUTER_V4x \
+  profile gre \
+  remote-address xXC_C2_OUTER_V4x
+
+create net tunnels tunnel xc-ddos-c2t2-v6 \
+  local-address xBIGIP_B_OUTER_V6x \
+  profile gre \
+  remote-address xXC_C2_OUTER_V6x
+```
+
+Tunnel names (`xc-ddos-c1t1-v4`, etc.) are arbitrary; use your own
+naming convention.
+
+### Set tunnel MTU
+
+GRE encapsulation adds overhead (24 bytes for IPv4 outer, 44 bytes
+for IPv6 outer). Without an explicit MTU, packets near 1500 bytes
+will fragment or be dropped. Set the tunnel MTU to account for
+encapsulation overhead:
+
+```shell title="tmsh"
+modify net tunnels tunnel xc-ddos-c1t1-v4 mtu 1476
+modify net tunnels tunnel xc-ddos-c1t1-v6 mtu 1456
+modify net tunnels tunnel xc-ddos-c1t2-v4 mtu 1476
+modify net tunnels tunnel xc-ddos-c1t2-v6 mtu 1456
+modify net tunnels tunnel xc-ddos-c2t1-v4 mtu 1476
+modify net tunnels tunnel xc-ddos-c2t1-v6 mtu 1456
+modify net tunnels tunnel xc-ddos-c2t2-v4 mtu 1476
+modify net tunnels tunnel xc-ddos-c2t2-v6 mtu 1456
+```
+
+:::caution[Path MTU]
+The values above assume a 1500-byte path MTU on the outer network.
+Adjust if your upstream path MTU is smaller. Ensure ICMP
+"destination unreachable / fragmentation needed" (type 3, code 4)
+is **not** blocked on any intermediate device so that Path MTU
+Discovery (PMTUD) functions correctly.
+:::
+
+### GRE anti-spoofing (upstream ACLs)
+
+GRE (IP protocol 47) does not provide authentication. Anyone who
+knows the outer IP pair can inject traffic into the tunnel. Apply
+ACLs on the upstream router or firewall to restrict inbound GRE to
+only the expected F5 scrubbing-center source IPs:
+
+```shell title="Cisco IOS"
+! Example upstream router ACL (Cisco IOS style)
+ip access-list extended ALLOW-XC-GRE
+  permit gre host xXC_C1_OUTER_V4x host xBIGIP_A_OUTER_V4x
+  permit gre host xXC_C2_OUTER_V4x host xBIGIP_A_OUTER_V4x
+  permit gre host xXC_C1_OUTER_V4x host xBIGIP_B_OUTER_V4x
+  permit gre host xXC_C2_OUTER_V4x host xBIGIP_B_OUTER_V4x
+  deny   gre any host xBIGIP_A_OUTER_V4x log
+  deny   gre any host xBIGIP_B_OUTER_V4x log
+```
+
+:::note
+Adapt the syntax for your router platform. The same principle
+applies to IPv6 ACLs for the IPv6 GRE tunnels. Both BIG-IP-A
+(`xBIGIP_A_OUTER_V4x`) and BIG-IP-B (`xBIGIP_B_OUTER_V4x`)
+outer IPs must be permitted as GRE destinations.
+:::
+
+### Inner Self-IPs (BGP peering)
+
+Assign inner IP addresses (inside the GRE tunnel) that will form the
+**BGP session** with F5 Distributed Cloud. The `allow-service` must
+include `tcp:179` (BGP) for the peering session to establish. Adding
+`icmp:any` on the inner self IPs enables PMTUD and reachability
+testing through the tunnel:
+
+**Tunnel C1-T1 — BIG-IP-A to xCENTER_1x:**
+
+```shell title="tmsh"
+create net self xc-ddos-c1t1-inner-v4 \
+  vlan xc-ddos-c1t1-v4 \
+  traffic-group traffic-group-local-only \
+  allow-service add { tcp:179 icmp:any } \
+  address xBIGIP_C1_T1_INNER_V4x/30
+
+create net self xc-ddos-c1t1-inner-v6 \
+  vlan xc-ddos-c1t1-v6 \
+  traffic-group traffic-group-local-only \
+  allow-service add { tcp:179 icmp:any } \
+  address xBIGIP_C1_T1_INNER_V6x/64
+```
+
+**Tunnel C2-T1 — BIG-IP-A to xCENTER_2x:**
+
+```shell title="tmsh"
+create net self xc-ddos-c2t1-inner-v4 \
+  vlan xc-ddos-c2t1-v4 \
+  traffic-group traffic-group-local-only \
+  allow-service add { tcp:179 icmp:any } \
+  address xBIGIP_C2_T1_INNER_V4x/30
+
+create net self xc-ddos-c2t1-inner-v6 \
+  vlan xc-ddos-c2t1-v6 \
+  traffic-group traffic-group-local-only \
+  allow-service add { tcp:179 icmp:any } \
+  address xBIGIP_C2_T1_INNER_V6x/64
+```
+
+**Tunnel C1-T2 — BIG-IP-B to xCENTER_1x:**
+
+```shell title="tmsh"
+create net self xc-ddos-c1t2-inner-v4 \
+  vlan xc-ddos-c1t2-v4 \
+  traffic-group traffic-group-local-only \
+  allow-service add { tcp:179 icmp:any } \
+  address xBIGIP_C1_T2_INNER_V4x/30
+
+create net self xc-ddos-c1t2-inner-v6 \
+  vlan xc-ddos-c1t2-v6 \
+  traffic-group traffic-group-local-only \
+  allow-service add { tcp:179 icmp:any } \
+  address xBIGIP_C1_T2_INNER_V6x/64
+```
+
+**Tunnel C2-T2 — BIG-IP-B to xCENTER_2x:**
+
+```shell title="tmsh"
+create net self xc-ddos-c2t2-inner-v4 \
+  vlan xc-ddos-c2t2-v4 \
+  traffic-group traffic-group-local-only \
+  allow-service add { tcp:179 icmp:any } \
+  address xBIGIP_C2_T2_INNER_V4x/30
+
+create net self xc-ddos-c2t2-inner-v6 \
+  vlan xc-ddos-c2t2-v6 \
+  traffic-group traffic-group-local-only \
+  allow-service add { tcp:179 icmp:any } \
+  address xBIGIP_C2_T2_INNER_V6x/64
+```
+
+### BGP
+
+Use [imish](https://techdocs.f5.com/kb/en-us/products/big-ip_ltm/manuals/product/big-ip-tmos-routing-administration-14-0-0/11.html) to configure BGP for Route Domain 0.
+
+:::note[Per-unit configuration]
+The `imish` BGP configuration is local to each BIG-IP unit. Each
+unit only configures neighbors for its own tunnels:
+
+- **BIG-IP-A** configures C1-T1 and C2-T1 neighbors.
+- **BIG-IP-B** configures C1-T2 and C2-T2 neighbors.
+
+The `router-id` must be unique per unit (use each unit's own outer
+self IP).
+:::
+
+1. Enter imish for RD 0:
+
+   ```bash title="bash"
+   tmsh run /util imish -r 0
+   ```
+
+1. Enter privileged and config mode:
+
+   ```shell title="imish"
+   localhost.localdomain[0]> enable
+   localhost.localdomain[0]# configure terminal
+   ```
+
+1. Example BGP configuration:
+
+:::caution[Replace placeholder values]
+- `xCUSTOMER_ASNx` — your public ASN registered with ARIN (or
+  equivalent RIR). A **public ASN is required** for routed DDoS
+  because F5 Distributed Cloud will announce your prefixes globally.
+  A private ASN (64512-65534 / 4200000000-4294967294) is only
+  acceptable if F5 SOC explicitly supports private-ASN peering for
+  your deployment.
+- `xF5_XC_ASNx` — F5's ASN (provided by the SOC).
+- `xBGP_PASSWORDx` — the agreed BGP MD5 password (or match Console
+  "default secret"). Never reuse this password for other services.
+:::
+
+**BIG-IP-A** (router-id `xBIGIP_A_OUTER_V4x`, neighbors C1-T1 + C2-T1):
+
+```shell title="imish"
+router bgp xCUSTOMER_ASNx
+  no synchronization
+  bgp log-neighbor-changes
+  no auto-summary
+  bgp router-id xBIGIP_A_OUTER_V4x
+  bgp graceful-restart restart-time 120
+  redistribute kernel route-map route-to-f5-ipv4
+
+  neighbor f5xc peer-group
+  neighbor f5xc remote-as xF5_XC_ASNx
+  neighbor f5xc description f5xc-peer-group
+  neighbor f5xc password xBGP_PASSWORDx
+  neighbor f5xc timers 10 30
+  neighbor f5xc soft-reconfiguration inbound
+  neighbor f5xc version 4
+  neighbor f5xc capability graceful-restart
+  neighbor f5xc send-community
+  neighbor f5xc ttl-security hops 1
+  neighbor f5xc maximum-prefix 10 warning-only
+  neighbor f5xc prefix-list deny-all in
+  neighbor f5xc prefix-list route-to-f5-ipv4 out
+
+  neighbor xXC_C1_T1_INNER_V4x peer-group f5xc
+  neighbor xXC_C1_T1_INNER_V4x description f5xc-c1-t1-v4
+
+  neighbor xXC_C2_T1_INNER_V4x peer-group f5xc
+  neighbor xXC_C2_T1_INNER_V4x description f5xc-c2-t1-v4
+
+  address-family ipv6
+    redistribute kernel route-map route-to-f5-ipv6
+    neighbor f5xc activate
+    neighbor f5xc soft-reconfiguration inbound
+    neighbor f5xc capability graceful-restart
+    neighbor f5xc prefix-list deny-all6 in
+    neighbor f5xc prefix-list route-to-f5-ipv6 out
+    neighbor xXC_C1_T1_INNER_V6x peer-group f5xc
+    neighbor xXC_C1_T1_INNER_V6x description f5xc-c1-t1-v6
+    neighbor xXC_C2_T1_INNER_V6x peer-group f5xc
+    neighbor xXC_C2_T1_INNER_V6x description f5xc-c2-t1-v6
+  exit-address-family
+
+ip prefix-list deny-all deny 0.0.0.0/0 le 32
+ip prefix-list route-to-f5-ipv4 permit xPROTECTED_PREFIX_V4x
+
+ipv6 prefix-list deny-all6 deny ::/0 le 128
+ipv6 prefix-list route-to-f5-ipv6 permit xPROTECTED_PREFIX_V6x
+
+ip route xPROTECTED_NET_V4x xPROTECTED_MASK_V4x null0 201
+ipv6 route xPROTECTED_PREFIX_V6x null0 201
+
+route-map route-to-f5-ipv4 permit 10
+  match ip address prefix-list route-to-f5-ipv4
+  set origin igp
+
+route-map route-to-f5-ipv6 permit 10
+  match ipv6 address prefix-list route-to-f5-ipv6
+  set origin igp
+```
+
+**BIG-IP-B** (router-id `xBIGIP_B_OUTER_V4x`, neighbors C1-T2 + C2-T2):
+
+```shell title="imish"
+router bgp xCUSTOMER_ASNx
+  no synchronization
+  bgp log-neighbor-changes
+  no auto-summary
+  bgp router-id xBIGIP_B_OUTER_V4x
+  bgp graceful-restart restart-time 120
+  redistribute kernel route-map route-to-f5-ipv4
+
+  neighbor f5xc peer-group
+  neighbor f5xc remote-as xF5_XC_ASNx
+  neighbor f5xc description f5xc-peer-group
+  neighbor f5xc password xBGP_PASSWORDx
+  neighbor f5xc timers 10 30
+  neighbor f5xc soft-reconfiguration inbound
+  neighbor f5xc version 4
+  neighbor f5xc capability graceful-restart
+  neighbor f5xc send-community
+  neighbor f5xc ttl-security hops 1
+  neighbor f5xc maximum-prefix 10 warning-only
+  neighbor f5xc prefix-list deny-all in
+  neighbor f5xc prefix-list route-to-f5-ipv4 out
+
+  neighbor xXC_C1_T2_INNER_V4x peer-group f5xc
+  neighbor xXC_C1_T2_INNER_V4x description f5xc-c1-t2-v4
+
+  neighbor xXC_C2_T2_INNER_V4x peer-group f5xc
+  neighbor xXC_C2_T2_INNER_V4x description f5xc-c2-t2-v4
+
+  address-family ipv6
+    redistribute kernel route-map route-to-f5-ipv6
+    neighbor f5xc activate
+    neighbor f5xc soft-reconfiguration inbound
+    neighbor f5xc capability graceful-restart
+    neighbor f5xc prefix-list deny-all6 in
+    neighbor f5xc prefix-list route-to-f5-ipv6 out
+    neighbor xXC_C1_T2_INNER_V6x peer-group f5xc
+    neighbor xXC_C1_T2_INNER_V6x description f5xc-c1-t2-v6
+    neighbor xXC_C2_T2_INNER_V6x peer-group f5xc
+    neighbor xXC_C2_T2_INNER_V6x description f5xc-c2-t2-v6
+  exit-address-family
+
+ip prefix-list deny-all deny 0.0.0.0/0 le 32
+ip prefix-list route-to-f5-ipv4 permit xPROTECTED_PREFIX_V4x
+
+ipv6 prefix-list deny-all6 deny ::/0 le 128
+ipv6 prefix-list route-to-f5-ipv6 permit xPROTECTED_PREFIX_V6x
+
+ip route xPROTECTED_NET_V4x xPROTECTED_MASK_V4x null0 201
+ipv6 route xPROTECTED_PREFIX_V6x null0 201
+
+route-map route-to-f5-ipv4 permit 10
+  match ip address prefix-list route-to-f5-ipv4
+  set origin igp
+
+route-map route-to-f5-ipv6 permit 10
+  match ipv6 address prefix-list route-to-f5-ipv6
+  set origin igp
+```
+
+**Key BGP settings explained:**
+
+- **`timers 10 30`** — Keepalive every 10 s, hold time 30 s. The
+  default (60 / 180) is too slow for DDoS mitigation failover.
+  Coordinate timer values with F5 SOC to match both sides.
+- **`ttl-security hops 1`** — Enables GTSM
+  ([RFC 5082](https://datatracker.ietf.org/doc/html/rfc5082)). Because the BGP sessions are single-hop
+  over the GRE tunnel, this prevents remote BGP spoofing by
+  requiring TTL = 255 on incoming BGP packets.
+- **`maximum-prefix 10 warning-only`** — Defence-in-depth safeguard.
+  Even though the inbound prefix-list denies all routes, this
+  generates a warning if the peer unexpectedly sends prefixes.
+- **`redistribute kernel`** — Injects the `null0` static routes into
+  BGP via the route-map. An alternative is to use explicit `network`
+  statements (e.g. `network xPROTECTED_PREFIX_V4x`), which are more precise
+  because only the exact prefix is advertised regardless of other
+  kernel routes. Either approach works; `redistribute kernel` with a
+  strict route-map is shown here for flexibility.
+
+:::tip[BFD (Bidirectional Forwarding Detection)]
+If your BIG-IP version supports BFD over GRE tunnels, enable it
+for sub-second failure detection:
+
+```shell
+neighbor f5xc fall-over bfd
+```
+
+BFD provides faster convergence than BGP keepalive timers alone.
+Confirm BFD support with your BIG-IP version and F5 SOC before
+enabling.
+:::
+
+The `null0` static routes with higher administrative distance (201)
+ensure the prefixes exist in the **kernel routing table**, so they can
+be redistributed to F5 Distributed Cloud via BGP without affecting
+normal routing under non-attack conditions. If the protected prefix
+already exists in the routing table from another source with a lower
+administrative distance, the `null0` route will not be active and
+redistribution may fail — verify with `show ip route` after
+configuration.

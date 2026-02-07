@@ -61,6 +61,8 @@ h1, h2, h3, h4, h5, h6 {
   padding-block-end: 0.5rem;
   border: none;
   border-radius: 0.75rem 0.75rem 0 0;
+  background: #323232 !important;
+  color: #ccc !important;
 }
 
 .expressive-code .frame.is-terminal .header::after {

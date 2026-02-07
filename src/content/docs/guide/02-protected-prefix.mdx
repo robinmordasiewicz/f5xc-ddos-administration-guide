@@ -1,0 +1,28 @@
+---
+title: Protected Prefix
+description: Requirements for the public IP address block that F5 Distributed Cloud defends against DDoS attacks.
+sidebar:
+  order: 2
+---
+
+import PlaceholderForm from '../../../components/PlaceholderForm.astro';
+
+<PlaceholderForm />
+
+## Protected prefix (public IP)
+
+The **protected prefix** is your organization's public IP address block that
+F5 Distributed Cloud defends against DDoS attacks.
+
+| Requirement | IPv4 | IPv6 |
+|-------------|------|------|
+| **Minimum size** | /24 (256 IPs) | /48 |
+| **Routability** | Publicly routable (non-RFC 1918) | Global unicast (non-ULA) |
+| **Registration** | RIR-assigned (ARIN, RIPE, APNIC) | RIR-assigned |
+| **Proof** | LOA or IRR/ROA registration | LOA or IRR/ROA registration |
+
+**Traffic flow:**
+
+1. F5 Distributed Cloud announces your prefix globally via BGP anycast
+1. All Internet traffic destined for your IPs routes through F5 scrubbing centers
+1. Attack traffic is dropped; clean traffic is delivered via GRE tunnels

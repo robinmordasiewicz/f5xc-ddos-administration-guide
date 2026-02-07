@@ -1,12 +1,19 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import remarkMermaid from './src/plugins/remark-mermaid.mjs';
 
 export default defineConfig({
   site: 'https://robinmordasiewicz.github.io',
   base: '/f5xc-ddos-administration-guide',
+  markdown: {
+    remarkPlugins: [remarkMermaid],
+  },
   integrations: [
     starlight({
       title: 'F5 XC DDoS Administration Guide',
+      logo: {
+        src: './src/assets/f5-logo.svg',
+      },
       social: [
         {
           label: 'GitHub',
@@ -16,7 +23,7 @@ export default defineConfig({
       ],
       sidebar: [
         {
-          label: 'Guide',
+          label: 'BIG-IP GRE/BGP Guide',
           autogenerate: { directory: 'guide' },
         },
       ],

@@ -56,6 +56,14 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* macOS iTerm-style window frame for terminal code blocks */
+.expressive-code .frame.is-terminal {
+  border: 2px solid rgba(255, 255, 255, 0.15);
+}
+
+:root[data-theme="light"] .expressive-code .frame.is-terminal {
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
 .expressive-code .frame.is-terminal .header {
   padding-block: 0.25rem;
   border: none;

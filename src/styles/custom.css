@@ -46,14 +46,27 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .expressive-code .frame {
+  --header-border-radius: 0.75rem;
   border-radius: 0.75rem;
+  overflow: hidden;
   box-shadow:
     0 2px 4px rgba(0, 0, 0, 0.04),
     0 8px 16px rgba(0, 0, 0, 0.08),
     0 24px 48px rgba(0, 0, 0, 0.12);
 }
 
-/* macOS iTerm-style traffic light dots on terminal code blocks */
+/* macOS iTerm-style window frame for terminal code blocks */
+.expressive-code .frame.is-terminal .header {
+  padding-block: 0.5rem;
+  padding-block-end: 0.5rem;
+  border: none;
+  border-radius: 0.75rem 0.75rem 0 0;
+}
+
+.expressive-code .frame.is-terminal .header::after {
+  border-bottom: none !important;
+}
+
 .expressive-code .frame.is-terminal .header::before {
   -webkit-mask-image: none !important;
   mask-image: none !important;
@@ -63,4 +76,9 @@ h1, h2, h3, h4, h5, h6 {
   height: 12px;
   border-radius: 50%;
   box-shadow: 20px 0 0 #ffbd2e, 40px 0 0 #27c93f;
+}
+
+.expressive-code .frame.is-terminal pre {
+  border: none;
+  border-radius: 0 0 0.75rem 0.75rem;
 }

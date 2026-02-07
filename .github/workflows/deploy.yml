@@ -15,4 +15,4 @@ concurrency:
 
 jobs:
   docs:
-    uses: robinmordasiewicz/docs-builder/.github/workflows/docs-build-deploy.yml@main
+    uses: robinmordasiewicz/f5xc-docs-builder/.github/workflows/docs-build-deploy.yml@main

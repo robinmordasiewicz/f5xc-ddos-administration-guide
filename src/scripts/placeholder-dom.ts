@@ -1,50 +1,6 @@
-import placeholderDefs from '../data/placeholders.json';
+import { loadValues, getAllValues } from '../lib/placeholder-store';
 
-const STORAGE_KEY = 'f5xc-placeholders';
 const PH_REGEX = /x([A-Z][A-Z0-9_]+)x/g;
-
-const cidrToMask: Record<string, string> = {
-  '/24 (256 IPs)': '255.255.255.0',
-  '/23 (512 IPs)': '255.255.254.0',
-  '/22 (1024 IPs)': '255.255.252.0',
-  '/21 (2048 IPs)': '255.255.248.0',
-};
-
-const cidrToShort: Record<string, string> = {
-  '/24 (256 IPs)': '/24',
-  '/23 (512 IPs)': '/23',
-  '/22 (1024 IPs)': '/22',
-  '/21 (2048 IPs)': '/21',
-};
-
-function loadValues(): Record<string, string> {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) return JSON.parse(stored);
-  } catch { /* ignore */ }
-  const defaults: Record<string, string> = {};
-  for (const [key, def] of Object.entries(placeholderDefs)) {
-    defaults[key] = (def as { default: string }).default;
-  }
-  return defaults;
-}
-
-function saveValues(values: Record<string, string>) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(values));
-}
-
-function getComputedValues(values: Record<string, string>): Record<string, string> {
-  const cidr = values['PROTECTED_CIDR_V4'] || '/24 (256 IPs)';
-  const mask = cidrToMask[cidr] || '255.255.255.0';
-  const short = cidrToShort[cidr] || '/24';
-  const net = values['PROTECTED_NET_V4'] || '192.0.2.0';
-  return {
-    ...values,
-    'PROTECTED_MASK_V4': mask,
-    'PROTECTED_PREFIX_V4': `${net}${short}`,
-    'PROTECTED_CIDR_V4': cidr,
-  };
-}
 
 function substituteText(text: string, values: Record<string, string>): string {
   return text.replace(PH_REGEX, (match, name) => {
@@ -119,53 +75,25 @@ async function renderMermaidDiagrams(values: Record<string, string>) {
   }
 }
 
-function bindForm(values: Record<string, string>) {
-  const form = document.getElementById('placeholder-form');
-  if (!form) return;
-
-  form.addEventListener('input', (e) => {
-    const target = e.target as HTMLInputElement | HTMLSelectElement;
-    const name = target.name;
-    if (!name) return;
-    values[name] = target.value;
-    const computed = getComputedValues(values);
-    saveValues(values);
-    updateSpans(computed);
-    renderMermaidDiagrams(computed);
-  });
+function handleChange(e: Event) {
+  const values = (e as CustomEvent).detail as Record<string, string>;
+  updateSpans(values);
+  renderMermaidDiagrams(values);
 }
 
-export function init() {
-  const values = loadValues();
-  const computed = getComputedValues(values);
-
-  // Set form field values from storage
-  const form = document.getElementById('placeholder-form');
-  if (form) {
-    form.querySelectorAll<HTMLInputElement | HTMLSelectElement>('input, select').forEach((el) => {
-      if (el.name && values[el.name] !== undefined) {
-        el.value = values[el.name];
-      }
-    });
-  }
-
-  // Walk the main content area to wrap placeholder tokens in spans
+function init() {
+  const values = getAllValues(loadValues());
   const content = document.querySelector('.sl-markdown-content') || document.body;
-  walkTextNodes(content, computed);
-
-  // Render Mermaid diagrams with substituted values
-  renderMermaidDiagrams(computed);
-
-  // Bind form change events
-  bindForm(values);
+  walkTextNodes(content, values);
+  renderMermaidDiagrams(values);
 }
 
-// Auto-initialize when DOM is ready
+document.addEventListener('placeholder-change', handleChange);
+
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
 } else {
   init();
 }
 
-// Re-init on Astro page navigation (View Transitions)
 document.addEventListener('astro:page-load', init);

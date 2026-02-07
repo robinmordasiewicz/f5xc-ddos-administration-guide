@@ -1,5 +1,6 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import react from '@astrojs/react';
 import remarkMermaid from './src/plugins/remark-mermaid.mjs';
 
 export default defineConfig({
@@ -28,5 +29,6 @@ export default defineConfig({
         },
       ],
     }),
+    react(),
   ],
 });

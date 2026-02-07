@@ -14,6 +14,6 @@ permissions:
 
 jobs:
   enforce:
-    uses: robinmordasiewicz/f5xc-docs-builder/.github/workflows/enforce-repo-settings.yml@main
+    uses: robinmordasiewicz/f5xc-template/.github/workflows/enforce-repo-settings-reusable.yml@main
     secrets:
       repo-admin-token: ${{ secrets.REPO_ADMIN_TOKEN }}

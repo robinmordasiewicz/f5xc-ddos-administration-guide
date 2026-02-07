@@ -12,6 +12,10 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'F5 XC DDoS Administration Guide',
+      customCss: [
+        './src/fonts/font-face.css',
+        './src/styles/custom.css',
+      ],
       logo: {
         src: './src/assets/f5-logo.svg',
       },

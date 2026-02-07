@@ -1,4 +1,4 @@
-# Contributing to F5 XC DDoS Administration Guide
+# Contributing
 
 Thank you for your interest in contributing. This document describes the workflow and rules that all contributors — human and AI — must follow.
 

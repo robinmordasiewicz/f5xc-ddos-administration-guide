@@ -59,7 +59,19 @@ async function renderMermaidDiagrams(values: Record<string, string>) {
   if (containers.length === 0) return;
 
   const mermaid = (await import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs')).default;
-  mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'default',
+    securityLevel: 'loose',
+    themeVariables: {
+      primaryColor: '#ffffff',
+      primaryBorderColor: '#cccccc',
+      background: '#ffffff',
+      mainBkg: '#ffffff',
+      secondBkg: '#ffffff',
+      tertiaryColor: '#ffffff',
+    },
+  });
 
   for (const container of containers) {
     const template = container.getAttribute('data-mermaid-src') || '';
@@ -69,6 +81,12 @@ async function renderMermaidDiagrams(values: Record<string, string>) {
     try {
       const { svg } = await mermaid.render(`mermaid-${Math.random().toString(36).slice(2)}`, substituted);
       container.innerHTML = svg;
+
+      // Force white background on the rendered SVG
+      const svgElement = container.querySelector('svg');
+      if (svgElement) {
+        svgElement.style.backgroundColor = 'white';
+      }
     } catch (e) {
       container.textContent = `Diagram error: ${e}`;
     }

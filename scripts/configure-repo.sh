@@ -222,8 +222,17 @@ for i in $(seq 0 $((BRANCH_COUNT - 1))); do
 
     # Compare required_status_checks
     desired_checks=$(echo "$DESIRED_PAYLOAD" | jq -c '.required_status_checks')
-    if [ "$desired_checks" = "null" ]; then
-      current_checks=$(echo "$CURRENT_PROTECTION" | jq -c '.required_status_checks')
+    current_checks=$(echo "$CURRENT_PROTECTION" | jq -c '.required_status_checks')
+    if [ "$desired_checks" != "null" ]; then
+      current_contexts=$(echo "$current_checks" | jq -c '.contexts // []' 2>/dev/null || echo '[]')
+      desired_contexts=$(echo "$desired_checks" | jq -c '.contexts // []')
+      current_strict=$(echo "$current_checks" | jq '.strict // false' 2>/dev/null || echo 'false')
+      desired_strict=$(echo "$desired_checks" | jq '.strict // false')
+      if [ "$current_checks" = "null" ] || [ "$current_contexts" != "$desired_contexts" ] || [ "$current_strict" != "$desired_strict" ]; then
+        echo "[WARN] Drift in required_status_checks: current=$current_checks desired=$desired_checks"
+        PROTECTION_DRIFT=true
+      fi
+    else
       if [ "$current_checks" != "null" ]; then
         echo "[WARN] Drift in required_status_checks: current=$current_checks desired=null"
         PROTECTION_DRIFT=true

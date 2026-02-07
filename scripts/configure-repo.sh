@@ -98,10 +98,99 @@ else
   echo "[SKIP] No actions_permissions in config"
 fi
 
-# ─── Phase 4: Apply branch protection ────────────────────────────────────────
+# ─── Phase 4: Apply Pages settings ───────────────────────────────────────────
 
 echo ""
-echo "=== Phase 4: Apply branch protection ==="
+echo "=== Phase 4: Apply Pages settings ==="
+
+DESIRED_PAGES=$(jq -c '.pages // empty' "$CONFIG_FILE")
+
+if [ -n "$DESIRED_PAGES" ]; then
+  DESIRED_BUILD_TYPE=$(echo "$DESIRED_PAGES" | jq -r '.build_type')
+  DESIRED_SOURCE_BRANCH=$(echo "$DESIRED_PAGES" | jq -r '.source.branch')
+  DESIRED_SOURCE_PATH=$(echo "$DESIRED_PAGES" | jq -r '.source.path')
+
+  PAGES_HTTP_CODE=$(gh api "repos/${OWNER}/${REPO}/pages" \
+    --include 2>/dev/null | head -1 | awk '{print $2}') || true
+
+  if [ "$PAGES_HTTP_CODE" = "404" ]; then
+    echo "[WARN] No Pages site found — will create"
+    echo "[INFO] Creating Pages site with build_type=$DESIRED_BUILD_TYPE..."
+    jq -n \
+      --arg build_type "$DESIRED_BUILD_TYPE" \
+      --arg branch "$DESIRED_SOURCE_BRANCH" \
+      --arg path "$DESIRED_SOURCE_PATH" \
+      '{build_type: $build_type, source: {branch: $branch, path: $path}}' \
+    | gh api "repos/${OWNER}/${REPO}/pages" --method POST --input - >/dev/null
+    echo "[OK] Pages site created"
+  else
+    CURRENT_PAGES=$(gh api "repos/${OWNER}/${REPO}/pages" 2>/dev/null)
+    CURRENT_BUILD_TYPE=$(echo "$CURRENT_PAGES" | jq -r '.build_type')
+    CURRENT_SOURCE_BRANCH=$(echo "$CURRENT_PAGES" | jq -r '.source.branch')
+    CURRENT_SOURCE_PATH=$(echo "$CURRENT_PAGES" | jq -r '.source.path')
+
+    PAGES_DRIFT=false
+
+    if [ "$DESIRED_BUILD_TYPE" != "$CURRENT_BUILD_TYPE" ]; then
+      echo "[WARN] Drift in pages.build_type: current=$CURRENT_BUILD_TYPE desired=$DESIRED_BUILD_TYPE"
+      PAGES_DRIFT=true
+    fi
+    if [ "$DESIRED_SOURCE_BRANCH" != "$CURRENT_SOURCE_BRANCH" ]; then
+      echo "[WARN] Drift in pages.source.branch: current=$CURRENT_SOURCE_BRANCH desired=$DESIRED_SOURCE_BRANCH"
+      PAGES_DRIFT=true
+    fi
+    if [ "$DESIRED_SOURCE_PATH" != "$CURRENT_SOURCE_PATH" ]; then
+      echo "[WARN] Drift in pages.source.path: current=$CURRENT_SOURCE_PATH desired=$DESIRED_SOURCE_PATH"
+      PAGES_DRIFT=true
+    fi
+
+    if [ "$PAGES_DRIFT" = true ]; then
+      echo "[INFO] Updating Pages settings..."
+      jq -n \
+        --arg build_type "$DESIRED_BUILD_TYPE" \
+        --arg branch "$DESIRED_SOURCE_BRANCH" \
+        --arg path "$DESIRED_SOURCE_PATH" \
+        '{build_type: $build_type, source: {branch: $branch, path: $path}}' \
+      | gh api "repos/${OWNER}/${REPO}/pages" --method PUT --input - >/dev/null
+      echo "[OK] Pages settings updated"
+    else
+      echo "[OK] Pages settings match — no changes needed"
+    fi
+  fi
+else
+  echo "[SKIP] No pages in config"
+fi
+
+# ─── Phase 5: Apply topics ────────────────────────────────────────────────────
+
+echo ""
+echo "=== Phase 5: Apply topics ==="
+
+DESIRED_TOPICS=$(jq -c '.topics.names // empty' "$CONFIG_FILE")
+
+if [ -n "$DESIRED_TOPICS" ]; then
+  CURRENT_TOPICS=$(gh api "repos/${OWNER}/${REPO}/topics" --jq '.names' 2>/dev/null)
+
+  DESIRED_SORTED=$(echo "$DESIRED_TOPICS" | jq -c 'sort')
+  CURRENT_SORTED=$(echo "$CURRENT_TOPICS" | jq -c 'sort')
+
+  if [ "$DESIRED_SORTED" != "$CURRENT_SORTED" ]; then
+    echo "[WARN] Drift in topics: current=$CURRENT_SORTED desired=$DESIRED_SORTED"
+    echo "[INFO] Updating repository topics..."
+    jq -n --argjson names "$DESIRED_TOPICS" '{names: $names}' \
+      | gh api "repos/${OWNER}/${REPO}/topics" --method PUT --input - >/dev/null
+    echo "[OK] Topics updated"
+  else
+    echo "[OK] Topics match — no changes needed"
+  fi
+else
+  echo "[SKIP] No topics in config"
+fi
+
+# ─── Phase 6: Apply branch protection ────────────────────────────────────────
+
+echo ""
+echo "=== Phase 6: Apply branch protection ==="
 
 BRANCH_COUNT=$(jq '.branch_protection | length' "$CONFIG_FILE")
 
@@ -231,10 +320,10 @@ for i in $(seq 0 $((BRANCH_COUNT - 1))); do
   fi
 done
 
-# ─── Phase 5: Verify ─────────────────────────────────────────────────────────
+# ─── Phase 7: Verify ─────────────────────────────────────────────────────────
 
 echo ""
-echo "=== Phase 5: Verify ==="
+echo "=== Phase 7: Verify ==="
 
 VERIFY_FAILED=false
 
@@ -260,6 +349,43 @@ if [ -n "$DESIRED_ACTIONS" ]; then
       VERIFY_FAILED=true
     fi
   done
+fi
+
+# Verify Pages settings
+if [ -n "$DESIRED_PAGES" ]; then
+  VERIFY_PAGES=$(gh api "repos/${OWNER}/${REPO}/pages" 2>/dev/null) || true
+  if [ -z "$VERIFY_PAGES" ]; then
+    echo "[FAIL] Pages site not found after apply"
+    VERIFY_FAILED=true
+  else
+    actual_build_type=$(echo "$VERIFY_PAGES" | jq -r '.build_type')
+    actual_source_branch=$(echo "$VERIFY_PAGES" | jq -r '.source.branch')
+    actual_source_path=$(echo "$VERIFY_PAGES" | jq -r '.source.path')
+
+    if [ "$DESIRED_BUILD_TYPE" != "$actual_build_type" ]; then
+      echo "[FAIL] pages.build_type: expected=$DESIRED_BUILD_TYPE actual=$actual_build_type"
+      VERIFY_FAILED=true
+    fi
+    if [ "$DESIRED_SOURCE_BRANCH" != "$actual_source_branch" ]; then
+      echo "[FAIL] pages.source.branch: expected=$DESIRED_SOURCE_BRANCH actual=$actual_source_branch"
+      VERIFY_FAILED=true
+    fi
+    if [ "$DESIRED_SOURCE_PATH" != "$actual_source_path" ]; then
+      echo "[FAIL] pages.source.path: expected=$DESIRED_SOURCE_PATH actual=$actual_source_path"
+      VERIFY_FAILED=true
+    fi
+  fi
+fi
+
+# Verify topics
+if [ -n "$DESIRED_TOPICS" ]; then
+  VERIFY_TOPICS=$(gh api "repos/${OWNER}/${REPO}/topics" --jq '.names' 2>/dev/null)
+  VERIFY_TOPICS_SORTED=$(echo "$VERIFY_TOPICS" | jq -c 'sort')
+  DESIRED_TOPICS_SORTED=$(echo "$DESIRED_TOPICS" | jq -c 'sort')
+  if [ "$DESIRED_TOPICS_SORTED" != "$VERIFY_TOPICS_SORTED" ]; then
+    echo "[FAIL] topics: expected=$DESIRED_TOPICS_SORTED actual=$VERIFY_TOPICS_SORTED"
+    VERIFY_FAILED=true
+  fi
 fi
 
 # Verify branch protection

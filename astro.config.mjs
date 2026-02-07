@@ -7,9 +7,13 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'F5 XC DDoS Administration Guide',
-      social: {
-        github: 'https://github.com/robinmordasiewicz/f5xc-ddos-administration-guide',
-      },
+      social: [
+        {
+          label: 'GitHub',
+          icon: 'github',
+          href: 'https://github.com/robinmordasiewicz/f5xc-ddos-administration-guide',
+        },
+      ],
       sidebar: [
         {
           label: 'Guide',

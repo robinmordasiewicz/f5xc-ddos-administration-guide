@@ -1,7 +1,15 @@
 :root {
   --sl-font: "proximaNova", -apple-system, "system-ui", "Segoe UI", Helvetica, Arial, sans-serif;
+  --sl-content-width: 60rem;
+  --sl-sidebar-width: 15rem;
 }
 
 h1, h2, h3, h4, h5, h6 {
   font-family: "neusaNextProWide", -apple-system, "system-ui", "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+@media (min-width: 72rem) {
+  .right-sidebar-container {
+    max-width: 11rem;
+  }
 }

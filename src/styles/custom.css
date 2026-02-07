@@ -25,3 +25,19 @@ h1, h2, h3, h4, h5, h6 {
   margin-block: 1.5rem;
   background: var(--sl-color-bg);
 }
+
+.starlight-aside {
+  border-radius: 0.75rem;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.04),
+    0 8px 16px rgba(0, 0, 0, 0.08),
+    0 24px 48px rgba(0, 0, 0, 0.12);
+}
+
+.expressive-code .frame {
+  border-radius: 0.75rem;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.04),
+    0 8px 16px rgba(0, 0, 0, 0.08),
+    0 24px 48px rgba(0, 0, 0, 0.12);
+}

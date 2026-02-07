@@ -23,7 +23,18 @@ h1, h2, h3, h4, h5, h6 {
     0 8px 16px rgba(0, 0, 0, 0.08),
     0 24px 48px rgba(0, 0, 0, 0.12);
   margin-block: 1.5rem;
-  background: var(--sl-color-bg);
+  background: #fff;
+}
+
+/* Force white background on Mermaid SVG for dark mode compatibility */
+.mermaid-container svg {
+  background: white !important;
+  border-radius: 0.5rem;
+}
+
+.mermaid-container svg rect,
+.mermaid-container svg polygon {
+  fill: white !important;
 }
 
 .starlight-aside {

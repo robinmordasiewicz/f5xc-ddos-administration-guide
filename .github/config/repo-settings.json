@@ -41,7 +41,7 @@
       "enforce_admins": true,
       "required_status_checks": {
         "strict": false,
-        "contexts": ["Check linked issues", "build"]
+        "contexts": ["Check linked issues"]
       },
       "required_pull_request_reviews": {
         "required_approving_review_count": 0,

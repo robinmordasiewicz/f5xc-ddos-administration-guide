@@ -19,6 +19,9 @@ export default defineConfig({
       logo: {
         src: './src/assets/f5-logo.svg',
       },
+      components: {
+        Footer: './src/components/Footer.astro',
+      },
       social: [
         {
           label: 'GitHub',

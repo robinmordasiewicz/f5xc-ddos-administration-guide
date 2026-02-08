@@ -18,4 +18,4 @@ concurrency:
 
 jobs:
   docs:
-    uses: robinmordasiewicz/f5xc-template/.github/workflows/docs-build-deploy.yml@main
+    uses: robinmordasiewicz/f5xc-template/.github/workflows/github-pages-deploy.yml@main

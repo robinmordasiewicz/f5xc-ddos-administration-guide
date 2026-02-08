@@ -6,7 +6,7 @@ on:
   push:
     branches: [main]
     paths:
-      - '.github/config/repo-settings.json'
+      - '.github/config/**'
   workflow_dispatch:
 
 permissions:

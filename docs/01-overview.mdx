@@ -1,6 +1,6 @@
 ---
 title: Overview
-description: Introduction to configuring GRE tunnels and BGP peering from a BIG-IP HA pair to F5 Distributed Cloud DDoS scrubbing centers.
+description: Introduction to configuring GRE tunnels and BGP peering from a BIG-IP HA pair to Cloud DDoS scrubbing centers.
 sidebar:
   order: 1
 ---
@@ -9,12 +9,12 @@ import PlaceholderForm from '../../components/PlaceholderFormWrapper.astro';
 
 <PlaceholderForm />
 
-## F5XC GRE/BGP BIG-IP
+## Cloud GRE/BGP BIG-IP
 
 - Configure **GRE tunnels** and **BGP peering** from a BIG-IP HA pair
   (acting as customer premises equipment, CPE), with independent
   tunnels per unit.
-- Connect to the **F5 Distributed Cloud DDoS Mitigation** scrubbing
+- Connect to the **Cloud DDoS Mitigation** scrubbing
   centers in **routed mode** (L3/L4).
 
 ```mermaid
@@ -43,7 +43,7 @@ flowchart LR
 
 ## Requirements
 
-- F5 Distributed Cloud **L3/L4 Routed DDoS Mitigation** service
+- Cloud **L3/L4 Routed DDoS Mitigation** service
   (Always On or Always Available) enabled for your tenant.
 - BIG-IP with:
     - LTM (or equivalent networking modules).
@@ -55,7 +55,7 @@ flowchart LR
      traverse the public Internet; deployments using private
      connectivity (L2, private peering) may use RFC 1918 endpoint
      addresses.
-- Connectivity between your data center/router and the F5 Distributed
+- Connectivity between your data center/router and the
   Cloud scrubbing center(s).
 
 ## HA Architecture
@@ -102,7 +102,7 @@ flowchart LR
 - **Independent BGP sessions**: Each unit runs its own BGP sessions
   over its own tunnels. BIG-IP-A peers with C1-T1 and C2-T1;
   BIG-IP-B peers with C1-T2 and C2-T2. On failover the standby
-  unit's BGP sessions are already established, so F5 Distributed
+  unit's BGP sessions are already established, so the
   Cloud can shift traffic immediately.
 - **Config sync**: Tunnel, self IP, and routing configurations are
   synced between units via **config-sync**. Because the `imish`
@@ -112,7 +112,7 @@ flowchart LR
   protected prefixes with normal BGP attributes. The standby unit
   can either advertise the same prefixes with a longer AS-path
   prepend (making it less preferred) or suppress advertisements
-  until failover. Coordinate the approach with F5 SOC.
+  until failover. Coordinate the approach with the SOC.
 - **Failover convergence**: With `graceful-restart` enabled and
   independent tunnels, the new active unit already has established
   BGP sessions. Convergence depends on BGP best-path selection
@@ -122,7 +122,7 @@ flowchart LR
 :::note
 The independent-tunnel HA model above is the recommended approach
 for customer-side device redundancy. Validate your specific
-failover design with your F5 account team before going to
+failover design with your account team before going to
 production, particularly around AS-path prepend strategy and BGP
 reconvergence timing.
 :::

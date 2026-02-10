@@ -18,7 +18,7 @@ and IPs as needed.
 
 For general GRE tunnel configuration on BIG-IP, see
 [Configuring a GRE Tunnel Using BIG-IP](https://community.f5.com/kb/technicalarticles/configuring-a-generic-routing-encapsulation-gre-tunnel-using-big-ip/289030). For initial
-routed configuration setup with F5 XC, see [K000147949](https://my.f5.com/manage/s/article/K000147949).
+routed configuration setup with the Cloud, see [K000147949](https://my.f5.com/manage/s/article/K000147949).
 
 ### tmsh
 
@@ -69,7 +69,7 @@ create net self xc-ddos-v6-self-b \
 
 ### GRE tunnels
 
-Each tunnel points from a BIG-IP unit to an F5 Distributed Cloud
+Each tunnel points from a BIG-IP unit to a Cloud
 scrubbing center endpoint. Create **two tunnels per unit** (one to
 each geo-located scrubbing center) for a total of **four logical
 tunnels** across the HA pair:
@@ -164,7 +164,7 @@ Discovery (PMTUD) functions correctly.
 GRE (IP protocol 47) does not provide authentication. Anyone who
 knows the outer IP pair can inject traffic into the tunnel. Apply
 ACLs on the upstream router or firewall to restrict inbound GRE to
-only the expected F5 scrubbing-center source IPs:
+only the expected Cloud scrubbing-center source IPs:
 
 ```shell title="Cisco IOS"
 ! Example upstream router ACL (Cisco IOS style)
@@ -187,7 +187,7 @@ outer IPs must be permitted as GRE destinations.
 ### Inner Self-IPs (BGP peering)
 
 Assign inner IP addresses (inside the GRE tunnel) that will form the
-**BGP session** with F5 Distributed Cloud. The `allow-service` must
+**BGP session** with the Cloud. The `allow-service` must
 include `tcp:179` (BGP) for the peering session to establish. Adding
 `icmp:any` on the inner self IPs enables PMTUD and reachability
 testing through the tunnel:
@@ -289,11 +289,11 @@ self IP).
 :::caution[Replace placeholder values]
 - `xCUSTOMER_ASNx` — your public ASN registered with ARIN (or
   equivalent RIR). A **public ASN is required** for routed DDoS
-  because F5 Distributed Cloud will announce your prefixes globally.
+  because the Cloud will announce your prefixes globally.
   A private ASN (64512-65534 / 4200000000-4294967294) is only
-  acceptable if F5 SOC explicitly supports private-ASN peering for
+  acceptable if SOC explicitly supports private-ASN peering for
   your deployment.
-- `xF5_XC_ASNx` — F5's ASN (provided by the SOC).
+- `xF5_XC_ASNx` — Cloud ASN (provided by the SOC).
 - `xBGP_PASSWORDx` — the agreed BGP MD5 password (or match Console
   "default secret"). Never reuse this password for other services.
 :::
@@ -307,56 +307,56 @@ router bgp xCUSTOMER_ASNx
   no auto-summary
   bgp router-id xBIGIP_A_OUTER_V4x
   bgp graceful-restart restart-time 120
-  redistribute kernel route-map route-to-f5-ipv4
+  redistribute kernel route-map route-to-cloud-ipv4
 
-  neighbor f5xc peer-group
-  neighbor f5xc remote-as xF5_XC_ASNx
-  neighbor f5xc description f5xc-peer-group
-  neighbor f5xc password xBGP_PASSWORDx
-  neighbor f5xc timers 10 30
-  neighbor f5xc soft-reconfiguration inbound
-  neighbor f5xc version 4
-  neighbor f5xc capability graceful-restart
-  neighbor f5xc send-community
-  neighbor f5xc ttl-security hops 1
-  neighbor f5xc maximum-prefix 10 warning-only
-  neighbor f5xc prefix-list deny-all in
-  neighbor f5xc prefix-list route-to-f5-ipv4 out
+  neighbor cloud peer-group
+  neighbor cloud remote-as xF5_XC_ASNx
+  neighbor cloud description cloud-peer-group
+  neighbor cloud password xBGP_PASSWORDx
+  neighbor cloud timers 10 30
+  neighbor cloud soft-reconfiguration inbound
+  neighbor cloud version 4
+  neighbor cloud capability graceful-restart
+  neighbor cloud send-community
+  neighbor cloud ttl-security hops 1
+  neighbor cloud maximum-prefix 10 warning-only
+  neighbor cloud prefix-list deny-all in
+  neighbor cloud prefix-list route-to-cloud-ipv4 out
 
-  neighbor xXC_C1_T1_INNER_V4x peer-group f5xc
-  neighbor xXC_C1_T1_INNER_V4x description f5xc-c1-t1-v4
+  neighbor xXC_C1_T1_INNER_V4x peer-group cloud
+  neighbor xXC_C1_T1_INNER_V4x description cloud-c1-t1-v4
 
-  neighbor xXC_C2_T1_INNER_V4x peer-group f5xc
-  neighbor xXC_C2_T1_INNER_V4x description f5xc-c2-t1-v4
+  neighbor xXC_C2_T1_INNER_V4x peer-group cloud
+  neighbor xXC_C2_T1_INNER_V4x description cloud-c2-t1-v4
 
   address-family ipv6
-    redistribute kernel route-map route-to-f5-ipv6
-    neighbor f5xc activate
-    neighbor f5xc soft-reconfiguration inbound
-    neighbor f5xc capability graceful-restart
-    neighbor f5xc prefix-list deny-all6 in
-    neighbor f5xc prefix-list route-to-f5-ipv6 out
-    neighbor xXC_C1_T1_INNER_V6x peer-group f5xc
-    neighbor xXC_C1_T1_INNER_V6x description f5xc-c1-t1-v6
-    neighbor xXC_C2_T1_INNER_V6x peer-group f5xc
-    neighbor xXC_C2_T1_INNER_V6x description f5xc-c2-t1-v6
+    redistribute kernel route-map route-to-cloud-ipv6
+    neighbor cloud activate
+    neighbor cloud soft-reconfiguration inbound
+    neighbor cloud capability graceful-restart
+    neighbor cloud prefix-list deny-all6 in
+    neighbor cloud prefix-list route-to-cloud-ipv6 out
+    neighbor xXC_C1_T1_INNER_V6x peer-group cloud
+    neighbor xXC_C1_T1_INNER_V6x description cloud-c1-t1-v6
+    neighbor xXC_C2_T1_INNER_V6x peer-group cloud
+    neighbor xXC_C2_T1_INNER_V6x description cloud-c2-t1-v6
   exit-address-family
 
 ip prefix-list deny-all deny 0.0.0.0/0 le 32
-ip prefix-list route-to-f5-ipv4 permit xPROTECTED_PREFIX_V4x
+ip prefix-list route-to-cloud-ipv4 permit xPROTECTED_PREFIX_V4x
 
 ipv6 prefix-list deny-all6 deny ::/0 le 128
-ipv6 prefix-list route-to-f5-ipv6 permit xPROTECTED_PREFIX_V6x
+ipv6 prefix-list route-to-cloud-ipv6 permit xPROTECTED_PREFIX_V6x
 
 ip route xPROTECTED_NET_V4x xPROTECTED_MASK_V4x null0 201
 ipv6 route xPROTECTED_PREFIX_V6x null0 201
 
-route-map route-to-f5-ipv4 permit 10
-  match ip address prefix-list route-to-f5-ipv4
+route-map route-to-cloud-ipv4 permit 10
+  match ip address prefix-list route-to-cloud-ipv4
   set origin igp
 
-route-map route-to-f5-ipv6 permit 10
-  match ipv6 address prefix-list route-to-f5-ipv6
+route-map route-to-cloud-ipv6 permit 10
+  match ipv6 address prefix-list route-to-cloud-ipv6
   set origin igp
 ```
 
@@ -369,56 +369,56 @@ router bgp xCUSTOMER_ASNx
   no auto-summary
   bgp router-id xBIGIP_B_OUTER_V4x
   bgp graceful-restart restart-time 120
-  redistribute kernel route-map route-to-f5-ipv4
+  redistribute kernel route-map route-to-cloud-ipv4
 
-  neighbor f5xc peer-group
-  neighbor f5xc remote-as xF5_XC_ASNx
-  neighbor f5xc description f5xc-peer-group
-  neighbor f5xc password xBGP_PASSWORDx
-  neighbor f5xc timers 10 30
-  neighbor f5xc soft-reconfiguration inbound
-  neighbor f5xc version 4
-  neighbor f5xc capability graceful-restart
-  neighbor f5xc send-community
-  neighbor f5xc ttl-security hops 1
-  neighbor f5xc maximum-prefix 10 warning-only
-  neighbor f5xc prefix-list deny-all in
-  neighbor f5xc prefix-list route-to-f5-ipv4 out
+  neighbor cloud peer-group
+  neighbor cloud remote-as xF5_XC_ASNx
+  neighbor cloud description cloud-peer-group
+  neighbor cloud password xBGP_PASSWORDx
+  neighbor cloud timers 10 30
+  neighbor cloud soft-reconfiguration inbound
+  neighbor cloud version 4
+  neighbor cloud capability graceful-restart
+  neighbor cloud send-community
+  neighbor cloud ttl-security hops 1
+  neighbor cloud maximum-prefix 10 warning-only
+  neighbor cloud prefix-list deny-all in
+  neighbor cloud prefix-list route-to-cloud-ipv4 out
 
-  neighbor xXC_C1_T2_INNER_V4x peer-group f5xc
-  neighbor xXC_C1_T2_INNER_V4x description f5xc-c1-t2-v4
+  neighbor xXC_C1_T2_INNER_V4x peer-group cloud
+  neighbor xXC_C1_T2_INNER_V4x description cloud-c1-t2-v4
 
-  neighbor xXC_C2_T2_INNER_V4x peer-group f5xc
-  neighbor xXC_C2_T2_INNER_V4x description f5xc-c2-t2-v4
+  neighbor xXC_C2_T2_INNER_V4x peer-group cloud
+  neighbor xXC_C2_T2_INNER_V4x description cloud-c2-t2-v4
 
   address-family ipv6
-    redistribute kernel route-map route-to-f5-ipv6
-    neighbor f5xc activate
-    neighbor f5xc soft-reconfiguration inbound
-    neighbor f5xc capability graceful-restart
-    neighbor f5xc prefix-list deny-all6 in
-    neighbor f5xc prefix-list route-to-f5-ipv6 out
-    neighbor xXC_C1_T2_INNER_V6x peer-group f5xc
-    neighbor xXC_C1_T2_INNER_V6x description f5xc-c1-t2-v6
-    neighbor xXC_C2_T2_INNER_V6x peer-group f5xc
-    neighbor xXC_C2_T2_INNER_V6x description f5xc-c2-t2-v6
+    redistribute kernel route-map route-to-cloud-ipv6
+    neighbor cloud activate
+    neighbor cloud soft-reconfiguration inbound
+    neighbor cloud capability graceful-restart
+    neighbor cloud prefix-list deny-all6 in
+    neighbor cloud prefix-list route-to-cloud-ipv6 out
+    neighbor xXC_C1_T2_INNER_V6x peer-group cloud
+    neighbor xXC_C1_T2_INNER_V6x description cloud-c1-t2-v6
+    neighbor xXC_C2_T2_INNER_V6x peer-group cloud
+    neighbor xXC_C2_T2_INNER_V6x description cloud-c2-t2-v6
   exit-address-family
 
 ip prefix-list deny-all deny 0.0.0.0/0 le 32
-ip prefix-list route-to-f5-ipv4 permit xPROTECTED_PREFIX_V4x
+ip prefix-list route-to-cloud-ipv4 permit xPROTECTED_PREFIX_V4x
 
 ipv6 prefix-list deny-all6 deny ::/0 le 128
-ipv6 prefix-list route-to-f5-ipv6 permit xPROTECTED_PREFIX_V6x
+ipv6 prefix-list route-to-cloud-ipv6 permit xPROTECTED_PREFIX_V6x
 
 ip route xPROTECTED_NET_V4x xPROTECTED_MASK_V4x null0 201
 ipv6 route xPROTECTED_PREFIX_V6x null0 201
 
-route-map route-to-f5-ipv4 permit 10
-  match ip address prefix-list route-to-f5-ipv4
+route-map route-to-cloud-ipv4 permit 10
+  match ip address prefix-list route-to-cloud-ipv4
   set origin igp
 
-route-map route-to-f5-ipv6 permit 10
-  match ipv6 address prefix-list route-to-f5-ipv6
+route-map route-to-cloud-ipv6 permit 10
+  match ipv6 address prefix-list route-to-cloud-ipv6
   set origin igp
 ```
 
@@ -426,7 +426,7 @@ route-map route-to-f5-ipv6 permit 10
 
 - **`timers 10 30`** — Keepalive every 10 s, hold time 30 s. The
   default (60 / 180) is too slow for DDoS mitigation failover.
-  Coordinate timer values with F5 SOC to match both sides.
+  Coordinate timer values with the SOC to match both sides.
 - **`ttl-security hops 1`** — Enables GTSM
   ([RFC 5082](https://datatracker.ietf.org/doc/html/rfc5082)). Because the BGP sessions are single-hop
   over the GRE tunnel, this prevents remote BGP spoofing by
@@ -446,17 +446,17 @@ If your BIG-IP version supports BFD over GRE tunnels, enable it
 for sub-second failure detection:
 
 ```shell
-neighbor f5xc fall-over bfd
+neighbor cloud fall-over bfd
 ```
 
 BFD provides faster convergence than BGP keepalive timers alone.
-Confirm BFD support with your BIG-IP version and F5 SOC before
+Confirm BFD support with your BIG-IP version and the SOC before
 enabling.
 :::
 
 The `null0` static routes with higher administrative distance (201)
 ensure the prefixes exist in the **kernel routing table**, so they can
-be redistributed to F5 Distributed Cloud via BGP without affecting
+be redistributed to the Cloud via BGP without affecting
 normal routing under non-attack conditions. If the protected prefix
 already exists in the routing table from another source with a lower
 administrative distance, the `null0` route will not be active and

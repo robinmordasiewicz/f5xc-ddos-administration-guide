@@ -1,6 +1,6 @@
 ---
-title: XC Configuration
-description: Configure tunnels, ASNs, and routes in the F5 Distributed Cloud Console for routed DDoS mitigation.
+title: Cloud Configuration
+description: Configure tunnels, ASNs, and routes in the Cloud Console for routed DDoS mitigation.
 sidebar:
   order: 4
 ---
@@ -11,15 +11,15 @@ import PlaceholderForm from '../../components/PlaceholderFormWrapper.astro';
 
 ## XC (UI)
 
-Use the web interface to configure the **F5 Distributed Cloud** side, based on
+Use the web interface to configure the **Cloud** side, based on
 the [L3/L4 Routed DDoS Mitigation](https://docs.cloud.f5.com/docs-v2/ddos-and-transit-services/how-tos/network-firewall/l3l4-ddos-mitigation) guide.
 
 ### Enable DDoS workspace
 
 Before you can configure tunnels and BGP:
 
-1. Contact the F5 Distributed Cloud team (via `sales@cloud.f5.com`
-   or your F5 account team) to:
+1. Contact the Cloud team (via `sales@example.com`
+   or your account team) to:
     - Enable **Routed DDoS Mitigation** workspace for your tenant.
     - Provide:
         - Your **public IP netblocks** (/24 or shorter for IPv4, /48 or
@@ -33,7 +33,7 @@ Before you can configure tunnels and BGP:
         - **AS-Path prepends** required for route announcements.
         - Any **BGP communities**, route preferences, or **AS-SET**
 
-1. F5 SOC will provision:
+1. SOC will provision:
     - Tunnels
     - ASNs
     - Protected prefixes
@@ -42,7 +42,7 @@ Before you can configure tunnels and BGP:
 
 ### Tunnels
 
-1. Log in to the [F5 Distributed Cloud Console](https://docs.cloud.f5.com/docs-v2/ddos-and-transit-services/how-tos/network-firewall/l3l4-ddos-mitigation) and
+1. Log in to the [Cloud Console](https://docs.cloud.f5.com/docs-v2/ddos-and-transit-services/how-tos/network-firewall/l3l4-ddos-mitigation) and
    select **Routed DDoS** from the service selector.
 1. Go to **Manage > Tunnels > Add Tunnel**, and configure:
     - **Location Name** and **Availability Zone** (Zone 1 by default).
@@ -65,7 +65,7 @@ Before you can configure tunnels and BGP:
     - Set **Holddown Timer** value in seconds if different from
       default.
 
-F5 SOC may pre-create these tunnel objects for you; you simply match
+SOC may pre-create these tunnel objects for you; you simply match
 the **endpoint IPs** and BGP settings on BIG-IP.
 
 ### ASNs and Routes
@@ -80,7 +80,7 @@ the **endpoint IPs** and BGP settings on BIG-IP.
     - Enter prefix, choose **Active** or **Not Advertised**, and
       optional expiration.
 
-These objects control which prefixes are announced via F5's global
+These objects control which prefixes are announced via the global
 network when the service is active.
 
 ### Network Restriction

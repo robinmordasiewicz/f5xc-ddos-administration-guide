@@ -12,11 +12,11 @@ import PlaceholderForm from '../../components/PlaceholderFormWrapper.astro';
 ## Topology and addresses
 
 Configuration for the **xDC_NAMEx** data center
-connecting to F5 Distributed Cloud scrubbing centers.
+connecting to Cloud scrubbing centers.
 
 :::note
 **These are example values.** Replace with customer-specific and
-F5-provided values using the tables above.
+SOC provided values using the tables above.
 
 Protected prefixes **must be publicly routable** (non-RFC 1918).
 GRE outer endpoint IPs must also be publicly routable when tunnels
@@ -26,7 +26,7 @@ peering) may allow RFC 1918 endpoints. See
 addresses.
 
 For redundancy, create **2 tunnels per BIG-IP unit** to different
-geo-located F5 scrubbing centers (4 tunnels total for an HA pair).
+geo-located scrubbing centers (4 tunnels total for an HA pair).
 :::
 
 ```mermaid
@@ -119,10 +119,10 @@ tunnels traverse the public Internet.
 :::
 
 :::note[IPv6 inner links]
-IPv6 inner links use /64 prefixes here to match common F5 Distributed
+IPv6 inner links use /64 prefixes here to match common
 Cloud defaults. For point-to-point links, /127 is preferred per
 [RFC 6164](https://datatracker.ietf.org/doc/html/rfc6164) to avoid neighbor-discovery exhaustion. Use /127
-if your F5 SOC tunnel assignment supports it.
+if the SOC tunnel assignment supports it.
 :::
 
 ### BIG-IP
@@ -163,7 +163,7 @@ if your F5 SOC tunnel assignment supports it.
     - IPv4: `xBIGIP_C2_T2_INNER_V4x/30`
     - IPv6: `xBIGIP_C2_T2_INNER_V6x/64`
 
-- Protected prefixes (advertised to F5 Distributed Cloud):
+- Protected prefixes (advertised to Cloud):
     - IPv4: `xPROTECTED_NET_V4xxPROTECTED_CIDR_V4x`
     - IPv6: `xPROTECTED_PREFIX_V6x`
 
